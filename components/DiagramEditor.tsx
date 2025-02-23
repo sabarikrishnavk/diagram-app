@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { dia } from '@joint/core';
 import { initializeJointJS } from '../utils/jointUtils';
 import { createShape } from '../utils/shapeUtils';
-
 import { saveGraphToFirestore, loadGraphFromFirestore } from '../utils/firebaseUtils';
 
 const DiagramEditor = () => {
@@ -14,47 +13,64 @@ const DiagramEditor = () => {
     const paper = useRef<dia.Paper | null>(null);
 
     useEffect(() => {
-        if (!canvasRef.current) return;
+        if (!canvasRef.current) {
+            console.error('Canvas ref is not attached to the DOM element.');
+            return;
+        }
 
-        // Initialize JointJS graph and paper
-        const { graph: jointGraph, paper: jointPaper } = initializeJointJS(canvasRef);
-        graph.current = jointGraph;
-        paper.current = jointPaper;
+        //console.log('Canvas ref:', canvasRef.current); // Debugging
+        // console.log('Canvas dimensions:', {
+        //     width: canvasRef.current.clientWidth,
+        //     height: canvasRef.current.clientHeight,
+        // }); // Debugging
 
-        // Handle native drop event
-        const handleDrop = (event: DragEvent) => {
-            event.preventDefault();
-            if (!paper.current || !draggingShape || !canvasRef.current) return;
+        try {
+            // Initialize JointJS graph and paper
+            const { graph: jointGraph, paper: jointPaper } = initializeJointJS(canvasRef);
+            graph.current = jointGraph;
+            paper.current = jointPaper;
 
-            // Get the canvas's bounding rectangle
-            const canvasRect = canvasRef.current.getBoundingClientRect();
+            // console.log('Graph:', jointGraph); // Debugging
+            // console.log('Paper:', jointPaper); // Debugging
 
-            // Calculate the drop position relative to the canvas
-            const x = event.clientX - canvasRect.left;
-            const y = event.clientY - canvasRect.top;
+            // Handle native drop event
+            const handleDrop = (event: DragEvent) => {
+                event.preventDefault();
+                // console.log('Drop event fired'); // Debugging
+                if (!paper.current || !draggingShape || !canvasRef.current) return;
 
-            console.log('Drop position:', { x, y }); // Debugging
+                // Get the canvas's bounding rectangle
+                const canvasRect = canvasRef.current.getBoundingClientRect();
 
-            // Create the shape at the drop position
-            const shape = createShape(draggingShape, { x, y }, shapeColor);
-            console.log('Shape created:', shape); // Debugging
-            graph.current?.addCell(shape);
-            setDraggingShape(null);
-        };
+                // Calculate the drop position relative to the canvas
+                const x = event.clientX - canvasRect.left;
+                const y = event.clientY - canvasRect.top;
 
-        // Prevent default drag behavior
-        const handleDragOver = (event: DragEvent) => {
-            event.preventDefault();
-        };
+                console.log('Drop position:', { x, y }); // Debugging
 
-        const canvas = canvasRef.current;
-        canvas.addEventListener('drop', handleDrop);
-        canvas.addEventListener('dragover', handleDragOver);
+                // Create the shape at the drop position
+                const shape = createShape(draggingShape, { x, y }, shapeColor);
+                console.log('Shape created:', shape); // Debugging
+                graph.current?.addCell(shape);
+                setDraggingShape(null);
+            };
 
-        return () => {
-            canvas.removeEventListener('drop', handleDrop);
-            canvas.removeEventListener('dragover', handleDragOver);
-        };
+            // Prevent default drag behavior
+            const handleDragOver = (event: DragEvent) => {
+                event.preventDefault();
+            };
+
+            const canvas = canvasRef.current;
+            canvas.addEventListener('drop', handleDrop);
+            canvas.addEventListener('dragover', handleDragOver);
+
+            return () => {
+                canvas.removeEventListener('drop', handleDrop);
+                canvas.removeEventListener('dragover', handleDragOver);
+            };
+        } catch (error) {
+            console.error('Error initializing JointJS:', error);
+        }
     }, [draggingShape, shapeColor]);
 
     return (
@@ -109,7 +125,7 @@ const DiagramEditor = () => {
             {/* Canvas */}
             <div
                 ref={canvasRef}
-                style={{ flex: 1, border: '1px solid #ccc', width: '100%', height: '100vh' }}
+                style={{ flex: 1, border: '1px solid #ccc', width: '100%', height: '100vh', backgroundColor: '#f0f0f0' }}
             ></div>
         </div>
     );

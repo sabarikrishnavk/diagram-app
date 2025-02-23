@@ -11,6 +11,7 @@ export const createShape = (
       return new shapes.standard.Rectangle({
         position,
         size: { width: 100, height: 40 },
+
         attrs: {
           body: {
             fill: color,
